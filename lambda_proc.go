@@ -38,9 +38,9 @@ type (
 		RequestId int `json:"proc_req_id"`
 		// Any errors that occur during processing
 		// or are returned by handlers are returned
-		Error *string `json:"error"`
+		Error *string `json:"errorMessage,omitempty"`
 		// General purpose output data
-		Data interface{} `json:"data"`
+		Data interface{} `json:"data,omitempty"`
 	}
 )
 
@@ -89,7 +89,7 @@ func RunStream(handler Handler, Stdin io.Reader, Stdout io.Writer) {
 		}(); err != nil {
 			if encErr := stdout.Encode(NewErrorResponse(err)); encErr != nil {
 				// bad times
-				log.Println("Failed to encode err response!", encErr.Error())
+				log.Printf("Failed to encode err response: %s, orig:%s", encErr.Error(), err.Error())
 			}
 		}
 	}

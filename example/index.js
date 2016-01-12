@@ -4,6 +4,7 @@ const MAX_FAILS = 4;
 var child_process = require('child_process'),
 	go_proc = null,
 	done = console.log.bind(console),
+	fail = console.log.bind(console),
 	fails = 0;
 
 (function new_go_proc() {
@@ -42,15 +43,20 @@ var child_process = require('child_process'),
 	go_proc.stdout.on('data', function(chunk) {
 		fails = 0; // reset fails
 		if (data === null) {
-			data = chunk;
+			data = new Buffer(chunk);
 		} else {
-			data = Buffer.concat([data, chunk]);
+			data.write(chunk);
 		}
 		// check for newline ascii char 10
 		if (data.length && data[data.length-1] == 10) {
-			var output = JSON.parse(data.toString('UTF-8'));
-			data = null;
+		  var output = JSON.parse(data.toString('UTF-8'));
+		  data = null;
+          if (output.errorMessage){
+            var error = new Error(output.errorMessage);
+            fail(error);
+          }else{
 			done(null, output);
+          }
 		};
 	});
 })();
@@ -59,6 +65,8 @@ exports.handler = function(event, context) {
 
 	// always output to current context's done
 	done = context.done.bind(context);
+	fail = context.fail.bind(context);
+    console.log(event);
 
 	go_proc.stdin.write(JSON.stringify({
 		"event": event,
@@ -66,4 +74,3 @@ exports.handler = function(event, context) {
 	})+"\n");
 
 }
-
